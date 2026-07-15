@@ -6,7 +6,7 @@ import psycopg2
 DB_HOST = "localhost"
 DB_NAME = "hawkins_cyber"
 DB_USER = "postgres"
-DB_PASS = "admin123"
+DB_PASS = ""
 DB_PORT = "5432"
 
 
