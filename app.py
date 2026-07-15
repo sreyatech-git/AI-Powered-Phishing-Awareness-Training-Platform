@@ -41,14 +41,14 @@ with open("secret.key", "rb") as key_file:
 DB_HOST = "localhost"
 DB_NAME = "hawkins_cyber"
 DB_USER = "postgres"
-DB_PASS = "admin123"
+DB_PASS = ""
 
 # ===========================
 # PUT YOUR KEYS HERE
 # ===========================
-GEMINI_API_KEY = "AQ.Ab8RN6JmakoI2hc6J8AenGqxGNCFGirgZJpaXQkIfDMW4cYsCg"
-SENDER_EMAIL = "sreya00713@gmail.com"
-EMAIL_PASSWORD = "okbhdyhfjsehtthc"
+GEMINI_API_KEY = ""
+SENDER_EMAIL = ""
+EMAIL_PASSWORD = ""
 
 def get_db_connection():
     return psycopg2.connect(
