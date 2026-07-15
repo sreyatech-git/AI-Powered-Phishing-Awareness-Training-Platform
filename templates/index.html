@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hawkins Phishing Awareness Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --hawkins-red: #c41a20;
+            --hawkins-dark-red: #a0151a;
+            --hawkins-light-red: #fde8e8;
+            --text-primary: #1a1a2e;
+            --text-secondary: #6b7280;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --border-color: #e5e7eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        /* AI Template Modal Styles */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px);
+            display: none; justify-content: center; align-items: center; z-index: 2000;
+        }
+        .modal-content {
+            background: white; width: 90%; max-width: 800px; border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); overflow: hidden;
+            display: flex; flex-direction: column; max-height: 90vh;
+        }
+        .modal-header {
+            padding: 20px 24px; border-bottom: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center;
+            background: #1a1a2e; color: white;
+        }
+        .modal-body { padding: 24px; overflow-y: auto; background: var(--bg-secondary); }
+        .template-card {
+            background: white; border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 16px; margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: all 0.3s;
+        }
+        .template-header { display: flex; justify-content: space-between; margin-bottom: 12px; font-weight: 600; font-size: 1.1rem; }
+        .template-actions { display: flex; gap: 8px; margin-top: 16px; }
+        .header {
+            background: var(--bg-primary);
+            border-bottom: 3px solid var(--hawkins-red);
+            padding: 0 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+        }
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .logo-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--hawkins-red);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: white;
+            flex-shrink: 0;
+        }
+        .logo-circle img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+        }
+        .logo-text h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+        .logo-text span {
+            font-size: 0.75rem;
+            color: var(--hawkins-red);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+        .btn-primary {
+            background: var(--hawkins-red);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: var(--hawkins-dark-red);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(196, 26, 32, 0.3);
+        }
+        .btn-outline {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .btn-outline:hover {
+            border-color: var(--hawkins-red);
+            color: var(--hawkins-red);
+        }
+        .btn-green {
+            background: var(--success);
+            color: white;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-green:hover {
+            background: #059669;
+        }
+
+        .alert-banner {
+            max-width: 1400px;
+            margin: 1rem auto;
+            padding: 0 2rem;
+        }
+        .alert {
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideDown 0.3s ease;
+        }
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .alert-danger {
+            background: var(--hawkins-light-red);
+            color: var(--hawkins-red);
+            border: 1px solid #fecaca;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 4px; height: 100%;
+            background: var(--hawkins-red);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+        .stat-card:hover::before { opacity: 1; }
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        .stat-icon {
+            width: 45px; height: 45px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .stat-icon.red { background: var(--hawkins-light-red); color: var(--hawkins-red); }
+        .stat-icon.green { background: #d1fae5; color: var(--success); }
+        .stat-icon.orange { background: #fef3c7; color: var(--warning); }
+        .stat-icon.blue { background: #dbeafe; color: var(--info); }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .charts-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .chart-card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+        .chart-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .chart-title i {
+            color: var(--hawkins-red);
+        }
+        .chart-container {
+            position: relative;
+            height: 280px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 2rem 0 1rem;
+        }
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .section-title::before {
+            content: '';
+            width: 4px; height: 24px;
+            background: var(--hawkins-red);
+            border-radius: 2px;
+        }
+
+        .table-card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+        .table-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .table-title {
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .table-title i {
+            color: var(--hawkins-red);
+        }
+        .search-box {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            width: 250px;
+            outline: none;
+            transition: border-color 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+        .search-box:focus {
+            border-color: var(--hawkins-red);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: #1a1a2e;
+            color: white;
+            padding: 0.875rem 1rem;
+            text-align: left;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 0.875rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+            vertical-align: middle;
+        }
+        tr:hover td { background: #fafafa; }
+        tr:last-child td { border-bottom: none; }
+
+        .employee-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .employee-email {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-family: 'Courier New', monospace;
+        }
+        .badge {
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .badge-red {
+            background: var(--hawkins-light-red);
+            color: var(--hawkins-red);
+        }
+        .badge-green {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .badge-orange {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .badge-blue {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .badge-purple {
+            background: #ede9fe;
+            color: #5b21b6;
+        }
+        .badge-dark {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        .status-pending {
+            color: var(--warning);
+            font-weight: 600;
+        }
+        .status-caught {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .send-form {
+            margin: 0;
+        }
+        .send-btn {
+            padding: 0.5rem 1.2rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: none;
+            background: var(--success);
+            color: white;
+            transition: all 0.2s;
+        }
+        .send-btn:hover {
+            background: #059669;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+        .send-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+
+        .bulk-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .bulk-form {
+            margin: 0;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 2rem;
+            background: var(--bg-primary);
+        }
+        .footer-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--hawkins-red);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.5rem;
+            overflow: hidden;
+            background: white;
+        }
+        .footer-logo img {
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-in {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+
+        @media (max-width: 768px) {
+            .header-content { padding: 0 1rem; }
+            .main-content { padding: 0 1rem 1rem; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .charts-row { grid-template-columns: 1fr; }
+            th, td { padding: 0.6rem 0.5rem; font-size: 0.8rem; }
+            .search-box { width: 100%; }
+        }
+        /* NEW: Risk Leaderboard Styles */
+        .risk-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            text-transform: uppercase;
+        }
+        .risk-danger { background-color: #fde8e8; color: #ef4444; border: 1px solid #fca5a5; }
+        .risk-warning { background-color: #fffbeb; color: #f59e0b; border: 1px solid #fde68a; }
+        .risk-info { background-color: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; }
+        .risk-success { background-color: #ecfdf5; color: #10b981; border: 1px solid #a7f3d0; }
+        
+        .score-badge {
+            background: #f3f4f6;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-weight: bold;
+            color: #1a1a2e;
+        }
+        /* Risk Leaderboard Styles */
+        .risk-badge { padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; text-transform: uppercase; }
+        .risk-danger { background-color: #fde8e8; color: #ef4444; border: 1px solid #fca5a5; }
+        .risk-warning { background-color: #fffbeb; color: #f59e0b; border: 1px solid #fde68a; }
+        .risk-info { background-color: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; }
+        .risk-success { background-color: #ecfdf5; color: #10b981; border: 1px solid #a7f3d0; }
+        .score-badge { background: #f3f4f6; padding: 4px 8px; border-radius: 6px; font-family: monospace; font-weight: bold; color: #1a1a2e; 
+        }
+        /* Executive Summary Grid */
+        .exec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .exec-box { background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; text-align: center; }
+        .exec-value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem; }
+        .exec-label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; }
+
+        /* Risk Breakdown Math */
+        .math-row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 8px 0; border-bottom: 1px dashed #f3f4f6; }
+        .math-row:last-child { border-bottom: none; font-weight: 700; font-size: 0.95rem; margin-top: 5px; padding-top: 10px; border-top: 1px solid var(--border-color); }
+
+        /* Risk Progression Flow */
+        .progression-flow { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 1rem; }
+        .prog-node { background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; text-align: center; }
+        .prog-arrow { color: var(--text-secondary); font-size: 0.8rem; }
+
+        /* Timeline Enhancements */
+        .timeline-card-header { font-size: 0.85rem; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px; }
+        .tl-badge { padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; background: #f1f5f9; color: #475569; }
+        .tl-action { display: flex; gap: 10px; margin: 10px 0; font-size: 0.8rem; font-weight: 500; }
+        .tl-action .yes { color: var(--success); }
+        .tl-action .no { color: var(--text-secondary); opacity: 0.5; }
+
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo-circle">
+                    <img src="/static/images/hawkins_logo.png" alt="Hawkins" onerror="this.onerror=null;this.src='/static/images/hawkins-logo.png';this.onerror=function(){this.style.display='none';this.parentElement.innerHTML='<span style=\'color:#c41a20;font-weight:bold;font-size:1.4rem;\'>H</span>';}">
+                </div>
+                <div class="logo-text">
+                    <h1>Hawkins Cookers Ltd.</h1>
+                    <span>Phishing Awareness Platform</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <a href="/executive-report" class="btn btn-outline">
+                    <i class="fas fa-file-pdf"></i> Executive Report
+                </a>
+            </div>
+        </div>
+    </header>
+
+    {% if tracking_status %}
+    <div class="alert-banner">
+        <div class="alert {% if tracking_status == 'Success' %}alert-success{% else %}alert-danger{% endif %}">
+            <i class="fas {% if tracking_status == 'Success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %}"></i>
+            <strong>{{ tracking_status }}:</strong> {{ targeted_user }}
+        </div>
+    </div>
+    {% endif %}
+
+    <main class="main-content">
+        <div class="stats-grid">
+            <div class="stat-card animate-in">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-value">{{ dataset | length }}</div>
+                        <div class="stat-label">Total Employees</div>
+                    </div>
+                    <div class="stat-icon red">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card animate-in delay-1">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-value">{{ dataset | selectattr('Status', 'equalto', 'CAUGHT (Logged in System)') | list | length }}</div>
+                        <div class="stat-label">Caught / Compromised</div>
+                    </div>
+                    <div class="stat-icon orange">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card animate-in delay-1">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-value">{{ dataset | selectattr('Status', 'equalto', 'Pending...') | list | length }}</div>
+                        <div class="stat-label">Pending Simulation</div>
+                    </div>
+                    <div class="stat-icon blue">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card animate-in delay-1">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-value">{{ dataset | selectattr('TargetGoal', 'equalto', 'CREDENTIAL') | list | length }}</div>
+                        <div class="stat-label">Credential Targets</div>
+                    </div>
+                    <div class="stat-icon green">
+                        <i class="fas fa-key"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card animate-in delay-2">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-value" id="adminAlertStatus" style="font-size: 1.5rem;">--</div>
+                        <div class="stat-label">Latest Admin Login</div>
+                        <div id="adminAlertDetails" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">No recent administrator activity.</div>
+                    </div>
+                    <div class="stat-icon red">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <div class="chart-card animate-in">
+                <div class="chart-title">
+                    <i class="fas fa-chart-pie"></i> Vulnerability by Department
+                </div>
+                <div class="chart-container">
+                    <canvas id="deptChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card animate-in">
+                <div class="chart-title">
+                    <i class="fas fa-chart-line"></i> Campaign Timeline
+                </div>
+                <div class="chart-container">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="section-header">
+            <h2 class="section-title">Enterprise Risk Leaderboard</h2>
+        </div>
+        <div class="table-card animate-in delay-1" style="margin-bottom: 2rem;">
+            <div class="table-header">
+                <span class="table-title"><i class="fas fa-shield-alt"></i> Top Vulnerable Employees</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Company Rank</th>
+                        <th>Employee</th>
+                        <th>Department</th>
+                        <th>Risk Score</th>
+                        <th>Percentile</th>
+                        <th>Risk Level</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for emp in ranked_employees %}
+                    <tr>
+                        <td><strong style="color: var(--hawkins-red);">#{{ emp.risk_rank }}</strong></td>
+                        <td><div class="employee-name">{{ emp.name }}</div></td>
+                        <td><span class="badge badge-blue">{{ emp.department }}</span></td>
+                        <td><span class="score-badge">{{ emp.risk_score }} pts</span></td>
+                        <td><strong>Top {{ emp.risk_percentile }}%</strong></td>
+                        <td>
+                            {% if emp.risk_level == 'CRITICAL' %}
+                                <span class="risk-badge risk-danger"><i class="fas fa-exclamation-triangle"></i> CRITICAL</span>
+                            {% elif emp.risk_level == 'HIGH' %}
+                                <span class="risk-badge risk-warning">HIGH</span>
+                            {% elif emp.risk_level == 'MEDIUM' %}
+                                <span class="risk-badge risk-info">MEDIUM</span>
+                            {% else %}
+                                <span class="risk-badge risk-success">LOW</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="table-card animate-in delay-2" style="margin-bottom: 2rem; padding: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h3 style="color: var(--hawkins-red); margin: 0;"><i class="fas fa-mail-bulk"></i> Targeted Bulk Campaign</h3>
+        
+        <div style="display: flex; gap: 10px;">
+            <form action="/trigger-scheduled-now" method="POST" style="margin:0;">
+                <button type="submit" class="btn btn-outline"><i class="fas fa-calendar-alt"></i> Run Scheduled</button>
+            </form>
+            <form action="/reset-logs" method="POST" style="margin:0;" onsubmit="return confirm('Reset all logs?');">
+                <button type="submit" class="btn btn-outline" style="color: var(--danger); border-color: #fecaca;"><i class="fas fa-trash-alt"></i> Reset Logs</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="form-group mb-3" style="margin-bottom: 1rem;">
+        <label style="font-weight: 600;">Step 1: Select Target Audience</label>
+        <select id="deptSelect" class="search-box" style="width: 100%; margin-top: 5px;" onchange="loadEmployees()">
+    <option value="" disabled selected>Select a Department...</option>
+    <option value="All Departments">All Departments</option>
+    <option value="Administration">Administration</option>
+    <option value="Customer Support">Customer Support</option>
+    <option value="Cyber Security">Cyber Security</option>
+    <option value="Finance">Finance</option>
+    <option value="HR">HR</option>
+    <option value="IT">IT</option>
+    <option value="Legal">Legal</option>
+    <option value="Management">Management</option>
+    <option value="Marketing">Marketing</option>
+    <option value="R&D">R&D</option>
+    <option value="Sales">Sales</option>
+    <option value="Supply Chain">Supply Chain</option>
+</select>
+    </div>
+
+    <div id="employeeListArea" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 1rem;">
+        <h5 style="margin-bottom: 10px;">Select Employees:</h5>
+        <div style="margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
+            <input type="checkbox" id="selectAll" onclick="toggleAll(this)" style="cursor: pointer;">
+            <label for="selectAll" style="font-weight: bold; cursor: pointer; margin-left: 5px;">Select All Employees</label>
+        </div>
+        <div id="employeeCheckboxes" style="max-height: 150px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
+    </div>
+
+    <div class="form-group mb-3" style="margin-bottom: 1rem;">
+        <label style="font-weight: 600; display: block; margin-bottom: 10px;">Step 2: Create Template</label>
+        <button type="button" class="btn" style="background: #7c3aed; color: white;" onclick="generateAIBulk()"><i class="fas fa-magic"></i> AI Recommend</button>
+        <button type="button" class="btn btn-outline" onclick="clearEditor()"><i class="fas fa-pen"></i> Write Manually</button>
+    </div>
+
+    <div class="form-group mb-3" style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 1rem;">
+        <div style="background: #f8f9fa; padding: 10px 15px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+            <strong>Email Preview</strong>
+            <button id="editBtn" class="btn btn-green" type="button" style="padding: 4px 10px; font-size: 0.8rem;" onclick="enableEditing()">
+                <i class="fas fa-edit"></i> Edit Template
+            </button>
+        </div>
+        <div style="padding: 15px; background: white;">
+            <label id="ctaHint" style="display: none; color: #c41a20; margin-bottom: 10px; font-size: 0.85rem;"><i class="fas fa-info-circle"></i> Tip: Type <strong>{{CTA}}</strong> anywhere below to insert the unique tracking link.</label>
+            <input type="text" id="campaignSubject" class="search-box" style="width: 100%; border-color: #cbd5e1; margin-bottom: 10px; font-weight: bold;" readonly placeholder="Email Subject Line...">
+            <textarea id="campaignBody" class="search-box" style="width: 100%; height: 150px; resize: vertical; font-family: 'Courier New', monospace; border-color: #cbd5e1;" readonly placeholder="Click 'Edit Template' to write manually, or click 'AI Recommend' above..."></textarea>
+        </div>
+    </div>
+
+    <button class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 1.1rem;" onclick="sendBulkCampaign()">🚀 Launch Targeted Campaign</button>
+</div>
+
+        <div class="section-header">
+            <h2 class="section-title">Employee Simulation Targets</h2>
+        </div>
+
+        <div class="table-card animate-in">
+            <div class="table-header">
+                <span class="table-title"><i class="fas fa-bullseye"></i> All Targets</span>
+                <input type="text" class="search-box" placeholder="Search employees..." id="searchInput">
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Target Recipient</th>
+                        <th>Endpoint Address</th>
+                        <th>Department Node</th>
+                        <th>Demographics</th>
+                        <th>Target Goal</th>
+                        <th>Simulation Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="employeeTable">
+                    {% for emp in dataset %}
+                    <tr>
+                       <td>
+    <a href="/employee/{{ emp.id }}" style="text-decoration: none; color: inherit;">
+        <div class="employee-name" style="cursor: pointer; color: var(--hawkins-red); font-weight: 600;">
+            {{ emp.Name }} 
+            <i class="fas fa-external-link-alt" style="font-size: 0.7rem; margin-left: 5px;"></i>
+        </div>
+    </a>
+    {% if emp.EmpID %}<div style="font-size:0.75rem;color:var(--text-secondary);">ID: {{ emp.EmpID }}</div>{% endif %}
+</td>
+                        <td>
+                            <div class="employee-email">{{ emp.EmailID }}</div>
+                        </td>
+                        <td>
+                            <span class="badge badge-blue">{{ emp.Department }}</span>
+                        </td>
+                        <td>
+                            <span style="font-size: 0.85rem;">Age: {{ emp.Age }} | {{ emp.Gender }}</span>
+                        </td>
+                        <td>
+                            {% if emp.TargetGoal == 'CREDENTIAL' %}
+                                <span class="badge badge-purple">CREDENTIAL</span>
+                            {% else %}
+                                <span class="badge badge-dark">CLICK</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if 'CAUGHT' in emp.Status %}
+                                <span class="status-caught"><i class="fas fa-times-circle"></i> {{ emp.Status }}</span>
+                            {% else %}
+                                <span class="status-pending"><i class="fas fa-hourglass-half"></i> {{ emp.Status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form action="/trigger-single-simulation" method="POST" class="send-form" style="display: flex; gap: 5px; align-items: center;">
+                                <input type="hidden" name="target_email" value="{{ emp.EmailID }}">
+                                <!-- Hidden input for individual strategy -->
+                                <input type="hidden" name="selected_strategy" id="strategy_{{ emp.EmailID|replace('@', '_')|replace('.', '_') }}" value="">
+                                
+                                <button type="submit" class="send-btn" id="btn_{{ emp.EmailID|replace('@', '_')|replace('.', '_') }}">
+                                    <i class="fas fa-paper-plane"></i> Send
+                                </button>
+                                <button type="button" class="btn" style="padding: 0.5rem 0.75rem; background: #e0f2fe; color: #0284c7; border: 1px solid #0284c7; font-size: 0.85rem;" onclick="openEditModal('{{ emp.EmailID }}')" title="Manually Edit Template">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <!-- Individual AI Advisor Button -->
+                                <button type="button" class="btn" style="padding: 0.5rem 0.75rem; background: #ede9fe; color: #7c3aed; border: 1px solid #7c3aed; font-size: 0.85rem;" onclick="openAiModal('{{ emp.Department }}', '{{ emp.EmailID }}')" title="AI Spear-Phishing Advisor">
+                                    <i class="fas fa-magic"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                            <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                            No employees found in database.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-logo">
+            <img src="/static/images/hawkins_logo.png" alt="Hawkins" onerror="this.onerror=null;this.src='/static/images/hawkins-logo.png';this.onerror=function(){this.style.display='none';this.parentElement.innerHTML='<span style=\'color:#c41a20;font-weight:bold;font-size:1.2rem;\'>H</span>';}">
+        </div>
+        <p>© 2024 Hawkins Cookers Ltd. Phishing Awareness Simulation Platform</p>
+        <p style="font-size: 0.75rem; margin-top: 0.5rem;">Internal Use Only — Confidential</p>
+    </footer>
+
+    <script>
+        // ============================================
+        // 1. DYNAMIC DEPARTMENT VULNERABILITY CHART
+        // ============================================
+        const deptCtx = document.getElementById('deptChart').getContext('2d');
+        
+        // Fetch Live Data from your existing backend API
+        fetch('/api/vulnerability-profile')
+            .then(response => response.json())
+            .then(data => {
+                // Extract department names and their total caught counts
+                const deptNames = Object.keys(data);
+                const caughtCounts = deptNames.map(dept => data[dept].caught);
+                
+                // Dynamic colors for however many departments you have
+                const dynamicColors = ['#c41a20', '#e85d5d', '#1a1a2e', '#6b7280', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#f97316'];
+
+                new Chart(deptCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: deptNames,
+                        datasets: [{
+                            data: caughtCounts,
+                            backgroundColor: dynamicColors.slice(0, deptNames.length),
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { font: { family: 'Inter', size: 11 }, padding: 10 }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let dept = context.label;
+                                        let caught = context.raw;
+                                        let total = data[dept].total;
+                                        let pct = data[dept].caught_pct;
+                                        return ` Caught: ${caught}/${total} (${pct}%)`;
+                                    }
+                                }
+                            }
+                        },
+                        cutout: '65%'
+                    }
+                });
+            })
+            .catch(err => console.error("Error loading chart data:", err));
+
+        // ============================================
+        // 2. CAMPAIGN TIMELINE CHART
+        // ============================================
+        const timelineCtx = document.getElementById('timelineChart').getContext('2d');
+
+        if (window.timelineChartInstance) {
+            window.timelineChartInstance.destroy();
+        }
+
+        fetch('/api/campaign-timeline')
+            .then(response => response.json())
+            .then(data => {
+                const hasValidData = Array.isArray(data) && data.length > 0 &&
+                    data.some(d => (parseInt(d.emails_sent) || 0) > 0 || (parseInt(d.clicks) || 0) > 0);
+
+                if (!hasValidData) {
+                    window.timelineChartInstance = new Chart(timelineCtx, {
+                        type: 'line',
+                        data: {
+                            labels: ['No Campaign Data'],
+                            datasets: [{
+                                label: 'Emails Sent',
+                                data: [0],
+                                borderColor: '#c41a20',
+                                backgroundColor: 'rgba(196, 26, 32, 0.08)',
+                                borderWidth: 2.5,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 5,
+                                pointHoverRadius: 8,
+                                pointBackgroundColor: '#c41a20',
+                                pointBorderColor: '#ffffff',
+                                pointBorderWidth: 2,
+                                pointHoverBorderWidth: 3
+                            }, {
+                                label: 'Clicks',
+                                data: [0],
+                                borderColor: '#f59e0b',
+                                backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                                borderWidth: 2.5,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 5,
+                                pointHoverRadius: 8,
+                                pointBackgroundColor: '#f59e0b',
+                                pointBorderColor: '#ffffff',
+                                pointBorderWidth: 2,
+                                pointHoverBorderWidth: 3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: { duration: 1200, easing: 'easeOutQuart' },
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                                legend: { position: 'top', align: 'end', labels: { font: { family: 'Inter', size: 12, weight: '500' }, usePointStyle: true, pointStyle: 'circle', padding: 20, boxWidth: 8 } },
+                                tooltip: { backgroundColor: '#1a1a2e', titleFont: { family: 'Inter', size: 13, weight: '600' }, bodyFont: { family: 'Inter', size: 12 }, padding: 14, cornerRadius: 10, displayColors: true, usePointStyle: true, callbacks: { title: function(context) { return context[0].label; } } }
+                            },
+                            scales: {
+                                y: { beginAtZero: true, suggestedMax: 2, grid: { color: '#f1f5f9', drawBorder: false, lineWidth: 1 }, ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8', padding: 10, stepSize: 1 }, border: { display: false } },
+                                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8', maxRotation: 45, minRotation: 0, padding: 10, autoSkip: true, maxTicksLimit: 6 }, border: { display: false } }
+                            }
+                        }
+                    });
+                    return;
+                }
+
+                const sentGradient = timelineCtx.createLinearGradient(0, 0, 0, 280);
+                sentGradient.addColorStop(0, 'rgba(196, 26, 32, 0.20)');
+                sentGradient.addColorStop(1, 'rgba(196, 26, 32, 0.02)');
+
+                const clickGradient = timelineCtx.createLinearGradient(0, 0, 0, 280);
+                clickGradient.addColorStop(0, 'rgba(245, 158, 11, 0.20)');
+                clickGradient.addColorStop(1, 'rgba(245, 158, 11, 0.02)');
+
+                const labels = data.map(d => d.date || d.label || '');
+                const sentData = data.map(d => parseInt(d.emails_sent) || 0);
+                const clickData = data.map(d => parseInt(d.clicks) || 0);
+
+                window.timelineChartInstance = new Chart(timelineCtx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Emails Sent',
+                            data: sentData,
+                            borderColor: '#c41a20',
+                            backgroundColor: sentGradient,
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 5,
+                            pointHoverRadius: 8,
+                            pointBackgroundColor: '#c41a20',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointHoverBorderWidth: 3,
+                            pointHoverBackgroundColor: '#c41a20',
+                            pointHoverBorderColor: '#ffffff'
+                        }, {
+                            label: 'Clicks',
+                            data: clickData,
+                            borderColor: '#f59e0b',
+                            backgroundColor: clickGradient,
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 5,
+                            pointHoverRadius: 8,
+                            pointBackgroundColor: '#f59e0b',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointHoverBorderWidth: 3,
+                            pointHoverBackgroundColor: '#f59e0b',
+                            pointHoverBorderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 1200, easing: 'easeOutQuart' },
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { position: 'top', align: 'end', labels: { font: { family: 'Inter', size: 12, weight: '500' }, usePointStyle: true, pointStyle: 'circle', padding: 20, boxWidth: 8 } },
+                            tooltip: { backgroundColor: '#1a1a2e', titleFont: { family: 'Inter', size: 13, weight: '600' }, bodyFont: { family: 'Inter', size: 12 }, padding: 14, cornerRadius: 10, displayColors: true, usePointStyle: true, callbacks: { title: function(context) { return context[0].label; }, label: function(context) { return context.dataset.label + ': ' + context.parsed.y; } } }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#f1f5f9', drawBorder: false, lineWidth: 1 }, ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8', padding: 10 }, border: { display: false } },
+                            x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8', maxRotation: 45, minRotation: 0, padding: 10, autoSkip: true, maxTicksLimit: 6 }, border: { display: false } }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error loading campaign timeline:', error);
+            });
+
+        // ============================================
+        // 3. SEARCH FUNCTIONALITY
+        // ============================================
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#employeeTable tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+
+      // ============================================
+        // 4. ADMIN ALERTS FETCH (FIXED TIMESTAMP)
+        // ============================================
+        fetch('/api/admin-alerts')
+            .then(response => response.json())
+            .then(data => {
+                const statusEl = document.getElementById('adminAlertStatus');
+                const detailsEl = document.getElementById('adminAlertDetails');
+                
+                if (data && data.username && data.username !== "No Active Session") {
+                    statusEl.textContent = data.status || 'SUCCESS';
+                    statusEl.style.color = 'var(--success)';
+                    detailsEl.innerHTML = `
+                        <div style="font-weight: 600; color: var(--text-primary);"><i class="fas fa-user"></i> ${data.username}</div>
+                        <div style="color: var(--hawkins-red); font-weight: 500;"><i class="fas fa-clock"></i> ${data.login_time}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-secondary);"><i class="fas fa-network-wired"></i> ${data.ip_address}</div>
+                    `;
+                } else {
+                    statusEl.textContent = '--';
+                    statusEl.style.color = '';
+                    detailsEl.innerHTML = `<div style="color:gray; font-style:italic;"><i class="fas fa-history"></i> No recent admin activity.</div>`;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading admin alerts:', error);
+            });
+        
+        // ============================================
+        // 5. AI CAMPAIGN ADVISOR LOGIC
+        // ============================================
+        let generatedStrategies = []; 
+        let currentTargetDept = 'Organization-Wide'; 
+        let currentTargetEmail = null;
+
+        function openAiModal(dept = 'Organization-Wide', email = null) { 
+            currentTargetDept = dept;
+            currentTargetEmail = email;
+            
+            // Modal ko reset karne ke liye
+            const modalBody = document.getElementById('aiModalBody');
+            modalBody.innerHTML = `
+                <div style="text-align:center; padding: 3rem;">
+                    <i class="fas fa-brain" style="font-size: 3rem; color: #7c3aed; margin-bottom: 15px;"></i>
+                    <h3 style="margin-bottom: 15px;">Generate Campaign Recommendations</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 20px;">AI will analyze campaign history and recommend the most effective themes to use next. The Email Evolution Engine will then write a unique email.</p>
+                    <button class="btn btn-primary" onclick="generateTemplates()" id="genBtn">
+                        <i class="fas fa-cogs"></i> Generate Recommendations
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('aiModal').style.display = 'flex'; 
+        }
+        function closeAiModal() { document.getElementById('aiModal').style.display = 'none'; }
+        
+       function generateTemplates() {
+            const body = document.getElementById('aiModalBody');
+            body.innerHTML = '<div style="text-align:center; padding:4rem;"><i class="fas fa-circle-notch fa-spin fa-3x" style="color:#7c3aed;"></i><p style="margin-top:15px; font-weight:600;">Analyzing Employee History & Generating Templates...</p></div>';
+            
+            fetch('/api/generate-new-templates', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({department: currentTargetDept, email: currentTargetEmail, count: 3}) 
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    generatedStrategies = data.templates;
+                    let targetName = currentTargetEmail ? currentTargetEmail : currentTargetDept;
+                    let html = `<h4 style="margin-bottom:15px; color:#1a1a2e;">AI Recommendations for: <span style="color:#7c3aed;">${targetName}</span></h4>`;
+                    data.templates.forEach((t, index) => {
+                        html += `
+                        <div class="template-card" id="card-${index}">
+                            <div class="template-header">
+                                <span><i class="fas fa-lightbulb" style="color:var(--hawkins-red);"></i> ${t.theme}</span>
+                                <span class="badge badge-purple">${t.category}</span>
+                            </div>
+                            <div style="font-size:0.9rem; color:#1a1a2e; margin-bottom:8px;">
+                                <b>Sender:</b> ${t.persona} | <b>Angle:</b> ${t.angle} | <b>Urgency:</b> ${t.urgency} | <b>Confidence:</b> <span style="color:var(--success);font-weight:bold;">${t.confidence}</span>
+                            </div>
+                            <div style="font-size:0.85rem; padding:12px; background:#ffffff; border:1px solid #e5e7eb; border-radius:6px; margin-bottom:12px;">
+                                <div style="margin-bottom:10px;">
+                                    <b>Subject:</b><br>
+                                    <input type="text" id="ai_sub_${index}" value="${t.subject}" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-family:inherit; margin-top:5px;">
+                                </div>
+                                <div>
+                                    <b>Body: (Edit exactly what you want to send)</b><br>
+                                    <textarea id="ai_body_${index}" style="width:100%; height:120px; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-family:'Courier New', monospace; resize:vertical; margin-top:5px;">${t.body}</textarea>
+                                </div>
+                            </div>
+                            <div class="template-actions">
+                                <button class="btn btn-green" onclick="approveTemplate(${index})"><i class="fas fa-check"></i> Arm this Template</button>
+                                <button class="btn btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="replaceTemplate('card-${index}')"><i class="fas fa-sync"></i> Replace</button>
+                            </div>
+                        </div>`;
+                    });
+                    body.innerHTML = html;
+                } else {
+                    body.innerHTML = `<div style="color:red; text-align:center; padding: 2rem;">Error: ${data.message}</div>`;
+                }
+            })
+            .catch(err => {
+                body.innerHTML = `<div style="color:red; text-align:center; padding: 2rem;">API Error! Please wait 60 seconds.</div>`;
+            });
+        }
+
+        function replaceTemplate(cardId) {
+            const card = document.getElementById(cardId);
+            card.innerHTML = '<div style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin" style="color:#7c3aed;"></i> Generating replacement...</div>';
+            
+            fetch('/api/generate-new-templates', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({department: currentTargetDept, email: currentTargetEmail, count: 1})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success' && data.templates.length > 0) {
+                    const t = data.templates[0];
+                    const newIndex = generatedStrategies.length;
+                    generatedStrategies.push(t);
+                    card.id = `card-${newIndex}`;
+                    card.innerHTML = `
+                        <div class="template-header">
+                            <span><i class="fas fa-lightbulb" style="color:var(--hawkins-red);"></i> ${t.theme}</span>
+                            <span class="badge badge-purple">${t.category}</span>
+                        </div>
+                        <div style="font-size:0.9rem; color:#1a1a2e; margin-bottom:8px;">
+                            <b>Sender:</b> ${t.persona} | <b>Angle:</b> ${t.angle} | <b>Urgency:</b> ${t.urgency} | <b>Confidence:</b> <span style="color:var(--success);font-weight:bold;">${t.confidence}</span>
+                        </div>
+                        <div style="font-size:0.85rem; padding:12px; background:#ffffff; border:1px solid #e5e7eb; border-radius:6px; margin-bottom:12px;">
+                            <div style="margin-bottom:10px;">
+                                <b>Subject:</b><br>
+                                <input type="text" id="ai_sub_${newIndex}" value="${t.subject}" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-family:inherit; margin-top:5px;">
+                            </div>
+                            <div>
+                                <b>Body: (Edit exactly what you want to send)</b><br>
+                                <textarea id="ai_body_${newIndex}" style="width:100%; height:120px; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-family:'Courier New', monospace; resize:vertical; margin-top:5px;">${t.body}</textarea>
+                            </div>
+                        </div>
+                        <div class="template-actions">
+                            <button class="btn btn-green" onclick="approveTemplate(${newIndex})"><i class="fas fa-check"></i> Arm this Template</button>
+                            <button class="btn btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="replaceTemplate('card-${newIndex}')"><i class="fas fa-sync"></i> Replace</button>
+                        </div>
+                    `;
+                } else {
+                    card.innerHTML = `<div style="color:red; padding:10px;">Failed to generate. <button class="btn btn-outline" onclick="document.getElementById('${cardId}').remove()">Close</button></div>`;
+                }
+            }).catch(err => { card.innerHTML = `<div style="color:red; padding:10px;">Quota Limit. Wait 60s.</div>`; });
+        }
+
+        function approveTemplate(index) {
+            const card = document.getElementById(`card-${index}`);
+            card.style.borderColor = "var(--success)";
+            card.style.backgroundColor = "#f0fdf4";
+            card.querySelector('.template-actions').innerHTML = '<span style="color:var(--success); font-weight:700; font-size:0.9rem;"><i class="fas fa-check-circle"></i> Template Armed!</span>';
+            
+            // Yahan hum ADMIN ke likhe hue/edit kiye hue details utha rahe hain!
+            const editedSubject = document.getElementById(`ai_sub_${index}`).value;
+            const editedBody = document.getElementById(`ai_body_${index}`).value;
+
+            const strategy = generatedStrategies[index];
+            const strategyData = {
+                category: strategy.category, theme: strategy.theme,
+                persona: strategy.persona, psychology: strategy.angle,
+                urgency: strategy.urgency, 
+                subject: editedSubject, 
+                body: editedBody
+            };
+            
+            if (currentTargetEmail) {
+                const safeId = currentTargetEmail.replace(/[@.]/g, '_');
+                document.getElementById('strategy_' + safeId).value = JSON.stringify(strategyData);
+                const sendBtn = document.getElementById('btn_' + safeId);
+                sendBtn.style.backgroundColor = '#7c3aed';
+                sendBtn.innerHTML = '<i class="fas fa-magic"></i> Send AI Template';
+            } else {
+                // NAYA CODE: Auto fill text into the new Bulk Wizard and unlock editing!
+                document.getElementById('campaignSubject').value = editedSubject;
+                document.getElementById('campaignBody').value = editedBody;
+                enableEditing(); 
+            }
+            setTimeout(closeAiModal, 1500);
+        }
+        // ============================================
+        // 6. MANUAL EDIT MODAL LOGIC
+        // ============================================
+        function openEditModal(email) {
+            // Target email ko input fields mein set karna
+            document.getElementById('editTargetEmail').value = email;
+            document.getElementById('editDisplayEmail').value = email;
+            
+            // Modal ko show karna (Aapki purani class use karke)
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            // Modal ko hide karna
+            document.getElementById('editModal').style.display = 'none';
+        }
+        // ============================================
+        // 7. TARGETED BULK CAMPAIGN WIZARD LOGIC
+        // ============================================
+        async function loadEmployees() {
+            const dept = document.getElementById('deptSelect').value;
+            const employeeArea = document.getElementById('employeeListArea');
+            const checkboxContainer = document.getElementById('employeeCheckboxes');
+            
+            if (!dept) return;
+            employeeArea.style.display = 'block';
+            checkboxContainer.innerHTML = '<i>Loading employees...</i>';
+
+            try {
+                const response = await fetch(`/api/get-employees?department=${dept}`);
+                const employees = await response.json();
+                checkboxContainer.innerHTML = ''; 
+                employees.forEach(emp => {
+                    checkboxContainer.innerHTML += `
+                        <div>
+                            <input class="emp-checkbox" type="checkbox" value="${emp.email}" id="emp_${emp.id}" style="cursor:pointer;">
+                            <label for="emp_${emp.id}" style="cursor:pointer; font-size: 0.9rem; margin-left: 5px;">
+                                ${emp.name} <span style="color:gray; font-size:0.8rem;">(${emp.email})</span>
+                            </label>
+                        </div>`;
+                });
+            } catch (error) {
+                checkboxContainer.innerHTML = '<span style="color:red;">Failed to load employees.</span>';
+            }
+        }
+
+        function toggleAll(source) {
+            document.querySelectorAll('.emp-checkbox').forEach(cb => cb.checked = source.checked);
+        }
+
+        function enableEditing() {
+            document.getElementById('campaignSubject').removeAttribute('readonly');
+            document.getElementById('campaignBody').removeAttribute('readonly');
+            document.getElementById('ctaHint').style.display = 'block';
+            const btn = document.getElementById('editBtn');
+            btn.innerHTML = '<i class="fas fa-check"></i> Editing Active';
+            btn.style.backgroundColor = '#10b981'; // Success Green
+            btn.style.color = 'white';
+            document.getElementById('campaignSubject').focus();
+        }
+
+        function clearEditor() {
+            enableEditing();
+            document.getElementById('campaignSubject').value = "";
+            document.getElementById('campaignBody').value = "";
+        }
+
+        function generateAIBulk() {
+            const dept = document.getElementById('deptSelect').value;
+            if (!dept) return alert("Please select a department first!");
+            // Opens your existing AI Modal for the selected department
+            openAiModal(dept, null); 
+        }
+
+        async function sendBulkCampaign() {
+            const selectedCheckboxes = document.querySelectorAll('.emp-checkbox:checked');
+            const emails = Array.from(selectedCheckboxes).map(cb => cb.value);
+            const subjectText = document.getElementById('campaignSubject').value.trim();
+            const bodyText = document.getElementById('campaignBody').value.trim();
+
+            if (emails.length === 0) return alert("Please select at least one employee from the list!");
+            if (!subjectText || !bodyText) return alert("Subject and Body cannot be empty. Please Edit Template.");
+            if (!bodyText.includes("{{CTA}}")) return alert("Warning: You forgot to add the {{CTA}} tag in your email body!");
+
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Dispatching Emails...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/trigger-custom-bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ emails: emails, subject: subjectText, body: bodyText })
+                });
+                const result = await response.json();
+                if (result.status === "success") {
+                    alert(result.message);
+                    location.reload(); // Reload to show updated table
+                } else {
+                    alert("Error: " + result.message);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch(e) {
+                alert("Network error occurred.");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+    </script>
+    <!-- AI Template Modal -->
+    <div class="modal-overlay" id="aiModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="margin:0; font-size:1.1rem;"><i class="fas fa-robot"></i> AI Campaign Advisor</h3>
+                <button onclick="closeAiModal()" style="background:none; border:none; color:white; cursor:pointer; font-size:1.5rem;">&times;</button>
+            </div>
+            <div class="modal-body" id="aiModalBody">
+                <div style="text-align:center; padding: 3rem;">
+                    <i class="fas fa-brain" style="font-size: 3rem; color: #7c3aed; margin-bottom: 15px;"></i>
+                    <h3 style="margin-bottom: 15px;">Generate Campaign Recommendations</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 20px;">AI will analyze campaign history and recommend the most effective themes to use next. The Email Evolution Engine will then write a unique email.</p>
+                    <button class="btn btn-primary" onclick="generateTemplates()" id="genBtn">
+                        <i class="fas fa-cogs"></i> Generate Recommendations
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Manual Edit Template Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-content" style="max-width: 650px;">
+            <div class="modal-header" style="background: var(--hawkins-red);">
+                <h3 style="margin:0; font-size:1.1rem;"><i class="fas fa-pen-nib"></i> Customise Email Template</h3>
+                <button onclick="closeEditModal()" style="background:none; border:none; color:white; cursor:pointer; font-size:1.5rem;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="customEmailForm" action="/trigger-custom-simulation" method="POST">
+                    <input type="hidden" id="editTargetEmail" name="target_email">
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 5px;">Target Employee:</label>
+                        <input type="text" id="editDisplayEmail" class="search-box" style="width: 100%; background: #f3f4f6; color: #6b7280;" readonly>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 5px;">Email Subject:</label>
+                        <input type="text" id="editSubject" name="custom_subject" class="search-box" style="width: 100%; border-color: #cbd5e1;" required placeholder="e.g. URGENT: Action Required">
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 5px;">Email Body (HTML allowed):</label>
+                        <textarea id="editBody" name="custom_body" class="search-box" style="width: 100%; height: 180px; resize: vertical; font-family: 'Courier New', monospace; border-color: #cbd5e1;" required placeholder="Write your email body here... Use {{CTA}} where you want the malicious tracking link to appear."></textarea>
+                        <small style="color: var(--text-secondary); display: block; margin-top: 5px;">
+                            <i class="fas fa-info-circle"></i> <b>Important:</b> You must include the exact text <b>{{CTA}}</b> somewhere in the body. The system will replace it with the tracking link.
+                        </small>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                        <button type="button" class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="background: var(--hawkins-red);"><i class="fas fa-paper-plane"></i> Send Custom Phish</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

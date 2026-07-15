@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive Report | Hawkins Phishing Awareness</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --hawkins-red: #c41a20;
+            --hawkins-dark-red: #a0151a;
+            --text-primary: #1a1a2e;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f5f5;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Report Container */
+        .report-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        /* Report Header */
+        .report-header {
+            background: white;
+            padding: 3rem 3rem 2rem;
+            text-align: center;
+            border-bottom: 3px solid var(--hawkins-red);
+            position: relative;
+        }
+        .report-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--hawkins-red), var(--hawkins-dark-red));
+        }
+        .report-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid var(--hawkins-red);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            overflow: hidden;
+            background: white;
+        }
+        .report-logo img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        }
+        .report-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        .report-subtitle {
+            font-size: 1rem;
+            color: var(--hawkins-red);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .report-meta {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        .report-meta i {
+            color: var(--hawkins-red);
+            margin-right: 0.3rem;
+        }
+
+        /* Report Body */
+        .report-body {
+            padding: 2rem 3rem;
+        }
+
+        /* Section */
+        .section {
+            margin-bottom: 2.5rem;
+        }
+        .section:last-child {
+            margin-bottom: 0;
+        }
+        .section-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--hawkins-red);
+            color: white;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-right: 0.75rem;
+        }
+        .section-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .section-content {
+            padding-left: 2.75rem;
+        }
+        .section-content p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        .stat-box {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 1.25rem;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+        .stat-box-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--hawkins-red);
+            margin-bottom: 0.25rem;
+        }
+        .stat-box-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Table */
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+        .report-table th {
+            background: #f8f9fa;
+            padding: 0.875rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
+        }
+        .report-table td {
+            padding: 0.875rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .report-table tr:hover td {
+            background: #fafafa;
+        }
+
+        /* Risk Bar */
+        .risk-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .risk-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: var(--hawkins-red);
+        }
+
+        /* Recommendation Box */
+        .recommendation-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+        .recommendation-box h4 {
+            color: #065f46;
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .recommendation-box ul {
+            margin-left: 1.25rem;
+            color: #374151;
+        }
+        .recommendation-box li {
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        /* Footer */
+        .report-footer {
+            padding: 1.5rem 3rem;
+            background: #f8f9fa;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Print Styles */
+        @media print {
+            body { background: white; }
+            .report-container {
+                box-shadow: none;
+                margin: 0;
+                max-width: 100%;
+            }
+            .no-print { display: none; }
+            .report-header { padding-top: 2rem; }
+        }
+
+        /* Action Buttons */
+        .action-bar {
+            max-width: 900px;
+            margin: 1rem auto;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            padding: 0 1rem;
+        }
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: var(--hawkins-red);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: var(--hawkins-dark-red);
+        }
+        .btn-outline {
+            background: white;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .btn-outline:hover {
+            border-color: var(--hawkins-red);
+            color: var(--hawkins-red);
+        }
+    </style>
+</head>
+<body>
+    <!-- Action Bar -->
+    <div class="action-bar no-print">
+        <a href="/" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+        <button class="btn btn-primary" onclick="window.print()">
+            <i class="fas fa-print"></i> Print Report
+        </button>
+    </div>
+
+    <!-- Report Container -->
+    <div class="report-container">
+        <!-- Header -->
+        <div class="report-header">
+            <div class="report-logo">
+                <img src="{{ url_for('static', filename='images/hawkins_logo.png') }}" alt="Hawkins" onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=\'color:#c41a20;font-weight:bold;font-size:2rem;\'>H</span>';">
+            </div>
+            <div class="report-title">Phishing Awareness Executive Report</div>
+            <div class="report-subtitle">Hawkins Cookers Limited</div>
+            <div class="report-meta">
+                <span><i class="fas fa-calendar"></i> {{ report_date | default('June 2024') }}</span>
+                <span><i class="fas fa-user-shield"></i> Security Team</span>
+                <span><i class="fas fa-lock"></i> Confidential</span>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="report-body">
+            <!-- Section 1: Executive Summary -->
+            <div class="section">
+                <div class="section-title">
+                    <span class="section-number">1</span> Executive Summary
+                </div>
+                <div class="section-content">
+                    <p>{{ executive_summary | default('This report summarizes the phishing awareness simulation campaign conducted across Hawkins Cookers Limited. The campaign was designed to assess employee vulnerability to phishing attacks and identify areas for security improvement.') }}</p>
+                </div>
+            </div>
+
+            <!-- Section 2: Key Metrics -->
+            <div class="section">
+                <div class="section-title">
+                    <span class="section-number">2</span> Key Metrics
+                </div>
+                <div class="section-content">
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-box-value">{{ total_employees | default(0) }}</div>
+                            <div class="stat-box-label">Employees Tested</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-box-value">{{ emails_sent | default(0) }}</div>
+                            <div class="stat-box-label">Emails Sent</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-box-value">{{ click_rate | default('0%') }}</div>
+                            <div class="stat-box-label">Click Rate</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-box-value">{{ credential_rate | default('0%') }}</div>
+                            <div class="stat-box-label">Credential Rate</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Department Breakdown -->
+            <div class="section">
+                <div class="section-title">
+                    <span class="section-number">3</span> Department Breakdown
+                </div>
+                <div class="section-content">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Department</th>
+                                <th>Employees</th>
+                                <th>Click Rate</th>
+                                <th>Risk Level</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dept in departments | default([]) %}
+                            <tr>
+                                <td><strong>{{ dept.name | default('Unknown') }}</strong></td>
+                                <td>{{ dept.employees | default(0) }}</td>
+                                <td>{{ dept.click_rate | default('0%') }}</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <div class="risk-bar" style="width: 60px;">
+                                            <div class="risk-fill" style="width: {{ dept.risk_score | default(0) }}%"></div>
+                                        </div>
+                                        <span style="font-size: 0.85rem; font-weight: 600;">{{ dept.risk_score | default(0) }}%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: var(--text-secondary);">No department data available.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Section 4: High Risk Employees -->
+            <div class="section">
+                <div class="section-title">
+                    <span class="section-number">4</span> High Risk Employees
+                </div>
+                <div class="section-content">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Risk Score</th>
+                                <th>Incidents</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for emp in high_risk_employees | default([]) %}
+                            <tr>
+                                <td><strong>{{ emp.name | default('Unknown') }}</strong></td>
+                                <td>{{ emp.department | default('General') }}</td>
+                                <td>
+                                    <span style="color: var(--hawkins-red); font-weight: 700;">{{ emp.risk_score | default(0) }}%</span>
+                                </td>
+                                <td>{{ emp.incidents | default(0) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: var(--text-secondary);">No high-risk employees identified.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Section 5: AI Threat Analysis & Recommendations -->
+            <div class="section">
+                <div class="section-title">
+                    <span class="section-number">5</span> AI Threat Analysis & Recommendations
+                </div>
+                <div class="section-content">
+                    <!-- AI Insights Block -->
+                    <div style="margin-bottom: 20px; color: var(--text-secondary); font-size: 0.95rem;">
+                        <p>Based on the simulation telemetry, the AI engine has identified the following vulnerability patterns:</p>
+                        <ul style="margin-top: 10px; margin-bottom: 20px; padding-left: 20px; color: var(--text-primary);">
+                            <li style="margin-bottom: 8px;"><strong>Highest Compromise Vector:</strong> The <em>"{{ ai_insights.top_lure }}"</em> template achieved a <strong>{{ ai_insights.top_lure_rate }}</strong> interaction rate, indicating a severe organizational vulnerability to financial-urgency triggers.</li>
+                            <li style="margin-bottom: 8px;"><strong>Primary Target:</strong> The <strong>{{ ai_insights.vulnerable_dept }}</strong> department currently exhibits the highest organizational risk score.</li>
+                            <li style="margin-bottom: 8px;"><strong>Behavioral Shift:</strong> {{ ai_insights.behavioral_note }}</li>
+                        </ul>
+                    </div>
+
+                    <!-- Recommendations Box -->
+                    <div class="recommendation-box">
+                        <h4><i class="fas fa-check-circle"></i> Action Items</h4>
+                        <ul>
+                            {% for rec in recommendations | default(['Conduct targeted training for high-risk departments.', 'Implement email filtering rules for suspicious attachments.', 'Schedule quarterly phishing simulation campaigns.', 'Review and update the company security policy.']) %}
+                            <li>{{ rec }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="report-footer">
+            <span>© 2024 Hawkins Cookers Ltd.</span>
+            <span>Internal Use Only — Confidential</span>
+        </div>
+    </div>
+</body>
+</html>

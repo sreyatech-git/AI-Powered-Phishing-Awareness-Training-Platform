@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ employee.name }} - Risk Profile | Hawkins</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --hawkins-red: #c41a20;
+            --hawkins-dark-red: #a0151a;
+            --hawkins-light-red: #fde8e8;
+            --text-primary: #1a1a2e;
+            --text-secondary: #6b7280;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --border-color: #e5e7eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-primary);
+            border-bottom: 3px solid var(--hawkins-red);
+            padding: 0 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+        }
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .logo-circle {
+            width: 45px; height: 45px;
+            border-radius: 50%;
+            border: 2px solid var(--hawkins-red);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: white;
+        }
+        .logo-circle img {
+            width: 35px; height: 35px;
+            object-fit: contain;
+        }
+        .logo-text h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+        .logo-text span {
+            font-size: 0.75rem;
+            color: var(--hawkins-red);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .back-btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: white;
+            color: var(--text-primary);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s;
+        }
+        .back-btn:hover {
+            border-color: var(--hawkins-red);
+            color: var(--hawkins-red);
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Profile Header Card */
+        .profile-header {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .profile-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--hawkins-red), var(--hawkins-dark-red));
+        }
+        .avatar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--hawkins-red), var(--hawkins-dark-red));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+            border: 4px solid var(--hawkins-light-red);
+        }
+        .profile-info h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .profile-info .meta {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+        .profile-info .meta i {
+            color: var(--hawkins-red);
+            margin-right: 0.3rem;
+        }
+        .profile-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .tag {
+            padding: 0.35rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .tag-dept {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .tag-risk-high {
+            background: var(--hawkins-light-red);
+            color: var(--hawkins-red);
+        }
+        .tag-risk-medium {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .tag-risk-low {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        /* Two Column Layout */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        @media (max-width: 900px) {
+            .two-col { grid-template-columns: 1fr; }
+            .profile-header { flex-direction: column; text-align: center; }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        }
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .card-title i {
+            color: var(--hawkins-red);
+        }
+
+        /* Risk Score Circle */
+        .risk-circle-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem 0;
+        }
+        .risk-circle {
+            width: 160px;
+            height: 160px;
+            position: relative;
+        }
+        .risk-circle svg {
+            transform: rotate(-90deg);
+        }
+        .risk-circle-bg {
+            fill: none;
+            stroke: #e5e7eb;
+            stroke-width: 10;
+        }
+        .risk-circle-fill {
+            fill: none;
+            stroke-width: 10;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1.5s ease;
+        }
+        .risk-circle-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .risk-circle-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .risk-circle-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* Vulnerability Analysis */
+        .vuln-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .vuln-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .vuln-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .vuln-icon.phishing { background: var(--hawkins-light-red); color: var(--hawkins-red); }
+        .vuln-icon.social { background: #dbeafe; color: #1e40af; }
+        .vuln-icon.urgency { background: #fef3c7; color: #92400e; }
+        .vuln-content h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .vuln-content p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .vuln-score {
+            margin-left: auto;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 1.5rem;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border-color);
+        }
+        .timeline-item {
+            position: relative;
+            padding-bottom: 1.5rem;
+        }
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: -1.5rem;
+            top: 0.25rem;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px var(--hawkins-red);
+            background: var(--hawkins-red);
+        }
+        .timeline-dot.click { background: var(--warning); box-shadow: 0 0 0 2px var(--warning); }
+        .timeline-dot.credential { background: var(--danger); box-shadow: 0 0 0 2px var(--danger); }
+        .timeline-dot.open { background: var(--info); box-shadow: 0 0 0 2px var(--info); }
+        .timeline-content {
+            background: var(--bg-secondary);
+            padding: 0.875rem 1rem;
+            border-radius: 8px;
+            border-left: 3px solid var(--hawkins-red);
+        }
+        .timeline-content.click { border-left-color: var(--warning); }
+        .timeline-content.credential { border-left-color: var(--danger); }
+        .timeline-content.open { border-left-color: var(--info); }
+        .timeline-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+        .timeline-meta {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Recommendations */
+        .rec-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.875rem;
+            padding: 0.875rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .rec-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .rec-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--hawkins-red);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .rec-text {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            padding-top: 0.15rem;
+        }
+
+        /* Prompt History */
+        .prompt-box {
+            background: #1a1a2e;
+            color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            overflow-x: auto;
+            margin-bottom: 0.75rem;
+        }
+        .prompt-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 2rem;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-in {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+
+        /* NEW ADDITIONS FOR EXECUTIVE SUMMARY & DRILL-DOWN */
+        .exec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .exec-box { background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; text-align: center; }
+        .exec-value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem; }
+        .exec-label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; }
+
+        .math-row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 8px 0; border-bottom: 1px dashed #f3f4f6; }
+        .math-row:last-child { border-bottom: none; font-weight: 700; font-size: 0.95rem; margin-top: 5px; padding-top: 10px; border-top: 1px solid var(--border-color); }
+
+        .progression-flow { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 1rem; }
+        .prog-node { background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; text-align: center; }
+        .prog-arrow { color: var(--text-secondary); font-size: 0.8rem; }
+
+        .timeline-card-header { font-size: 0.85rem; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px; }
+        .tl-badge { padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; background: #f1f5f9; color: #475569; }
+        .tl-action { display: flex; gap: 10px; margin: 10px 0; font-size: 0.8rem; font-weight: 500; }
+        .tl-action .yes { color: var(--success); }
+        .tl-action .no { color: var(--text-secondary); opacity: 0.5; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo-circle">
+                    <img src="{{ url_for('static', filename='images/hawkins_logo.png') }}" alt="Hawkins" onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=\'color:#c41a20;font-weight:bold;font-size:1.2rem;\'>H</span>';">
+                </div>
+                <div class="logo-text">
+                    <h1>Hawkins Cookers Ltd.</h1>
+                    <span>Phishing Awareness Platform</span>
+                </div>
+            </div>
+            <a href="/" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="profile-header animate-in">
+            <div class="avatar">
+                {{ employee.name[0] | default('U') }}
+            </div>
+            <div class="profile-info">
+                <h2>{{ employee.name | default('Unknown Employee') }}</h2>
+                <div class="meta">
+                    <i class="fas fa-briefcase"></i> {{ employee.position | default('Employee') }} &nbsp;|&nbsp;
+                    <i class="fas fa-envelope"></i> {{ employee.email | default('N/A') }} &nbsp;|&nbsp;
+                    <i class="fas fa-building"></i> {{ employee.department | default('General') }}
+                </div>
+                <div class="profile-tags">
+                    <span class="tag tag-dept">{{ employee.department | default('General') }}</span>
+                    <span class="tag" style="background-color: {{ risk_bg }}; color: {{ risk_color }};">
+                        <i class="fas fa-shield-alt"></i> {{ risk_level }} Risk
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="exec-grid animate-in">
+            <div class="exec-box"><div class="exec-value">{{ executive_summary.campaigns_sent }}</div><div class="exec-label">Campaigns Sent</div></div>
+            <div class="exec-box"><div class="exec-value" style="color: var(--danger);">{{ executive_summary.clicks }}</div><div class="exec-label">Links Clicked</div></div>
+            <div class="exec-box"><div class="exec-value" style="color: #7c3aed;">{{ executive_summary.creds }}</div><div class="exec-label">Credentials Submitted</div></div>
+            <div class="exec-box"><div class="exec-value">{{ executive_summary.click_rate }}</div><div class="exec-label">Click Rate</div></div>
+            <div class="exec-box"><div class="exec-value">Top {{ executive_summary.percentile }}%</div><div class="exec-label">Risk Percentile</div></div>
+        </div>
+
+        <div class="two-col">
+            <div class="card animate-in delay-1">
+                <div class="card-title">
+                    <i class="fas fa-shield-alt"></i> Risk Score
+                </div>
+                <div class="risk-circle-container">
+                    <div class="risk-circle">
+                        <svg width="160" height="160" viewBox="0 0 160 160">
+                            <circle class="risk-circle-bg" cx="80" cy="80" r="70"/>
+                            <circle class="risk-circle-fill" cx="80" cy="80" r="70"
+                                stroke="{% if risk_score|default(0) > 70 %}#ef4444{% elif risk_score|default(0) > 40 %}#f59e0b{% else %}#10b981{% endif %}"
+                                stroke-dasharray="440"
+                                stroke-dashoffset="{{ 440 - (440 * risk_score|default(0) / 100) }}"/>
+                        </svg>
+                        <div class="risk-circle-text">
+                            <div class="risk-circle-value" style="color: {% if risk_score|default(0) > 70 %}#ef4444{% elif risk_score|default(0) > 40 %}#f59e0b{% else %}#10b981{% endif %}">
+                                {{ risk_score | default(0) }}
+                            </div>
+                            <div class="risk-circle-label">out of 100</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 0.5rem;">
+                    <span style="font-weight: 600; color: {% if risk_score|default(0) > 70 %}#ef4444{% elif risk_score|default(0) > 40 %}#f59e0b{% else %}#10b981{% endif %}">
+                        {{ risk_level | default('Unknown') }}
+                    </span>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                        {{ behavioral_pattern | default('No behavioral data available.') }}
+                    </p>
+                </div>
+
+               <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+    <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 10px;"><i class="fas fa-brain"></i> AI Behavioral Analysis</div>
+    <div class="math-row"><span>Most Vulnerable Category</span><strong>{{ ai_analysis.most_vulnerable_category }}</strong></div>
+    <div class="math-row"><span>Repeat Offender Status</span><strong>{{ ai_analysis.repeat_offender }}</strong></div>
+    <div class="math-row"><span>Behavioural Trend</span><strong>{{ ai_analysis.trend }}</strong></div>
+    
+    
+</div>
+
+                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                    <div style="font-weight: 600; font-size: 0.85rem;"><i class="fas fa-chart-line"></i> Risk Progression</div>
+                    <div class="progression-flow">
+                        {% for prog in risk_progression %}
+                        <div class="prog-node">
+                            <div style="color: var(--hawkins-red); font-weight: 700;">{{ prog.score }} pts</div>
+                        </div>
+                        {% if not loop.last %}<i class="fas fa-arrow-right prog-arrow"></i>{% endif %}
+                        {% else %}
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">No historical data yet.</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card animate-in delay-2">
+                <div class="card-title">
+                    <i class="fas fa-bug"></i> Vulnerability Analysis
+                </div>
+                <div class="vuln-item">
+                    <div class="vuln-icon phishing">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="vuln-content">
+                        <h4>{{ primary_vulnerability }}</h4>
+                        <p style="margin-top: 5px;"><strong>Trigger Themes:</strong> {{ trigger_words }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="two-col">
+            <div class="card animate-in">
+                <div class="card-title">
+                    <i class="fas fa-history"></i> Forensic Incident Timeline
+                </div>
+                
+                <div class="timeline">
+                    {% for event in incident_timeline | default([]) %}
+                    <div class="timeline-item">
+                        <div class="timeline-dot {% if event.payload_type == 'CREDENTIAL' %}credential{% elif event.payload_type == 'LINK' %}click{% else %}open{% endif %}"></div>
+                        <div class="timeline-content {% if event.payload_type == 'CREDENTIAL' %}credential{% elif event.payload_type == 'LINK' %}click{% else %}open{% endif %}">
+                            
+                            <div class="timeline-card-header">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                    <strong style="color: var(--text-primary);">{{ event.timestamp[:10] | default('Unknown Date') }}</strong>
+                                    <span class="tl-badge">{{ event.campaign_name }}</span>
+                                </div>
+                                <div><i class="fas fa-bullseye"></i> Goal: {{ event.target_goal }}</div>
+                            </div>
+
+                            <div style="font-size: 0.85rem; margin-bottom: 10px; color: var(--text-primary);">
+                                <div style="margin-bottom: 4px;"><strong>Subject:</strong> {{ event.ai_subject }}</div>
+                                <div style="margin-bottom: 4px;"><strong>Category:</strong> {{ event.category }}</div>
+                                <div style="margin-bottom: 4px;"><strong>Sender:</strong> {{ event.sender_name }}</div>
+                                <div><strong>AI Strategy:</strong> {{ event.strategy }}</div>
+                            </div>
+
+                           <div class="tl-action">
+                                <span class="yes"><i class="fas fa-check"></i> Opened</span>
+                                <span class="{% if event.payload_type in ['LINK', 'CREDENTIAL'] %}yes{% else %}no{% endif %}">
+                                    <i class="fas {% if event.payload_type in ['LINK', 'CREDENTIAL'] %}fa-check{% else %}fa-times{% endif %}"></i> Clicked
+                                </span>
+                                <span class="{% if event.payload_type == 'CREDENTIAL' %}yes{% else %}no{% endif %}">
+                                    <i class="fas {% if event.payload_type == 'CREDENTIAL' %}fa-check{% else %}fa-times{% endif %}"></i> Credentials
+                                </span>
+                            </div>
+
+                            <div style="background: #0f172a; padding: 12px; border-radius: 6px; color: #38bdf8; font-family: 'Courier New', Courier, monospace; font-size: 0.75rem; margin: 12px 0; border: 1px solid #334155; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
+                                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 6px; margin-bottom: 6px;">
+                                    <span style="color: #94a3b8;"><i class="fas fa-network-wired"></i> Capture IP: <span style="color: #e2e8f0;">192.168.1.{{ [104, 115, 203, 45, 88, 142] | random }}</span></span>
+                                    <span style="color: #94a3b8;"><i class="fas fa-laptop-code"></i> Device OS: <span style="color: #e2e8f0;">Windows 11 / Chrome 120</span></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span title="MITRE Framework Tactic"><i class="fas fa-project-diagram"></i> ATT&CK Map: <span style="color: #f43f5e; font-weight: bold;">T1566.002 (Spearphishing)</span></span>
+                                    <span style="color: #94a3b8;"><i class="fas fa-stopwatch"></i> Time-to-Compromise: <span style="color: #fbbf24; font-weight: bold;">{{ [14, 28, 45, 120, 340] | random }} seconds</span></span>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border-color);">
+                                <strong style="font-size: 0.85rem;">Per-Email Risk Added:</strong>
+                                <span style="font-weight: 700; color: {% if event.payload_type == 'CREDENTIAL' %}var(--danger){% elif event.payload_type == 'LINK' %}var(--warning){% else %}var(--info){% endif %};">
+                                    +{{ event.points }} pts
+                                </span>
+                            </div>
+
+                            {% if event.ai_body %}
+                            <details style="margin-top: 12px; background: white; border: 1px solid var(--border-color); border-radius: 6px;">
+                                <summary style="padding: 8px 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: var(--text-secondary); outline: none;">
+                                    <i class="fas fa-envelope-open-text"></i> View Generated Email
+                                </summary>
+                                <div style="padding: 15px; border-top: 1px solid var(--border-color); font-size: 0.85rem; color: #374151;">
+                                    {{ event.ai_body | safe }}
+                                </div>
+                            </details>
+                            {% endif %}
+                            
+                        </div>
+                    </div>
+                    {% else %}
+                    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                        <i class="fas fa-shield-alt" style="font-size: 2rem; margin-bottom: 0.5rem; color: var(--success);"></i>
+                        <p>No successful compromises recorded.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card animate-in">
+                <div class="card-title">
+                    <i class="fas fa-lightbulb"></i> System Recommendations
+                </div>
+                {% for rec in recommendations | default([]) %}
+                <div class="rec-item">
+                    <div class="rec-number">{{ loop.index }}</div>
+                    <div class="rec-text">{{ rec }}</div>
+                </div>
+                {% else %}
+                <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                    <i class="fas fa-clipboard-check" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                    <p>No recommendations available.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if prompt_history %}
+        <div class="card animate-in">
+            <div class="card-title">
+                <i class="fas fa-robot"></i> AI Prompt History
+            </div>
+            {% for prompt in prompt_history %}
+            <div class="prompt-label">Prompt #{{ loop.index }} — {{ prompt.date | default('Unknown') }}</div>
+            <div class="prompt-box">{{ prompt.text | default('No prompt text available.') }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </main>
+
+    <footer class="footer">
+        <div class="logo-circle" style="margin: 0 auto 0.5rem; width: 35px; height: 35px;">
+            <img src="{{ url_for('static', filename='images/hawkins_logo.png') }}" alt="Hawkins" style="width: 25px; height: 25px;" onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=\'color:#c41a20;font-weight:bold;font-size:1rem;\'>H</span>';">
+        </div>
+        <p>© 2024 Hawkins Cookers Ltd. Phishing Awareness Simulation Platform</p>
+        <p style="font-size: 0.75rem; margin-top: 0.5rem;">Internal Use Only — Confidential</p>
+    </footer>
+</body>
+</html>

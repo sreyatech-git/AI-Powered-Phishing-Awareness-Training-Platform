@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Enterprise System Health Dashboard</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='system_health.css') }}">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body>
+
+<div class="dashboard-container">
+
+    
+
+    <header class="topbar">
+
+        <div class="title-section">
+
+            <h1>
+
+                <i class="fa-solid fa-heart-pulse"></i>
+
+                Enterprise System Health
+
+            </h1>
+
+            <p>
+
+                Real-Time Infrastructure Monitoring Center
+
+            </p>
+
+        </div>
+
+        <div class="top-actions">
+
+            <div class="info-box">
+
+                <small>Last Refresh</small>
+
+                <h3 id="refreshTime">
+                    --
+                </h3>
+
+            </div>
+
+            <div class="info-box">
+
+                <small>Status</small>
+
+                <h3 class="green">
+
+                    ● LIVE
+
+                </h3>
+
+            </div>
+
+            <div class="admin-box">
+
+                ADMIN
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+    
+
+    <section class="hero">
+
+        <div class="health-ring">
+
+            <svg width="180" height="180">
+
+                <circle
+                    cx="90"
+                    cy="90"
+                    r="70"
+                    class="ring-bg"/>
+
+                <circle
+                    cx="90"
+                    cy="90"
+                    r="70"
+                    id="progressCircle"
+                    class="ring-progress"/>
+
+            </svg>
+
+            <div class="ring-text">
+
+                <h1 id="overallScore">
+
+                    96
+
+                </h1>
+
+                <span>%</span>
+
+            </div>
+
+        </div>
+
+
+        <div class="hero-content">
+
+            <h2>
+
+                Overall System Health
+
+            </h2>
+
+            <h1 id="overallStatus">
+
+                🟢 HEALTHY
+
+            </h1>
+
+            <p>
+
+                Monitoring all enterprise services,
+                PostgreSQL database,
+                AI engine,
+                SMTP connectivity,
+                hardware resources,
+                campaign engine,
+                authentication,
+                and system infrastructure.
+
+            </p>
+
+        </div>
+
+    </section>
+
+
+    
+
+    <section class="kpi-grid">
+
+        <!-- CPU -->
+
+        <div class="kpi-card" id="cpuCard">
+
+            <div class="kpi-header">
+
+                <i class="fa-solid fa-microchip"></i>
+
+                CPU
+
+            </div>
+
+            <div class="kpi-value"
+
+                 id="cpu_usage">
+
+                --
+
+            </div>
+
+            <div
+
+                id="cpu_status"
+
+                class="status-pill">
+
+                --
+
+            </div>
+
+            <div class="progress">
+
+                <div
+
+                    id="cpuBar"
+
+                    class="progress-fill">
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- MEMORY -->
+
+        <div class="kpi-card"
+
+             id="memoryCard">
+
+            <div class="kpi-header">
+
+                <i class="fa-solid fa-memory"></i>
+
+                Memory
+
+            </div>
+
+            <div
+
+                id="memory_usage"
+
+                class="kpi-value">
+
+                --
+
+            </div>
+
+            <div
+
+                id="memory_status"
+
+                class="status-pill">
+
+                --
+
+            </div>
+
+            <div class="progress">
+
+                <div
+
+                    id="memoryBar"
+
+                    class="progress-fill">
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- DISK -->
+
+        <div class="kpi-card"
+
+             id="diskCard">
+
+            <div class="kpi-header">
+
+                <i class="fa-solid fa-hard-drive"></i>
+
+                Disk
+
+            </div>
+
+            <div
+
+                id="disk_usage"
+
+                class="kpi-value">
+
+                --
+
+            </div>
+
+            <div
+
+                id="disk_status"
+
+                class="status-pill">
+
+                --
+
+            </div>
+
+            <div class="progress">
+
+                <div
+
+                    id="diskBar"
+
+                    class="progress-fill">
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- DATABASE -->
+
+        <div class="kpi-card"
+
+             id="dbCard">
+
+            <div class="kpi-header">
+
+                <i class="fa-solid fa-database"></i>
+
+                PostgreSQL
+
+            </div>
+
+            <div
+
+                id="db_status"
+
+                class="kpi-value">
+
+                --
+
+            </div>
+
+            <div
+
+                id="db_latency"
+
+                class="sub-text">
+
+                --
+
+            </div>
+
+            <hr>
+
+            <p>
+
+                Tables :
+
+                <span id="dbTables">
+
+                    --
+
+                </span>
+
+            </p>
+
+            <p>
+
+                Connections :
+
+                <span id="dbConnections">
+
+                    --
+
+                </span>
+
+            </p>
+
+            <p>
+
+                Size :
+
+                <span id="dbSize">
+
+                    --
+
+                </span>
+
+            </p>
+
+        </div>
+
+    </section>
+
+    
+
+    <section class="operations-grid">
+
+        <!-- SMTP -->
+
+        <div class="panel">
+
+            <div class="panel-title">
+
+                <i class="fa-solid fa-envelope"></i>
+
+                SMTP Service
+
+            </div>
+
+            <div class="panel-status green">
+
+                ● Connected
+
+            </div>
+
+            <div class="metric-row">
+
+                <span>Port</span>
+
+                <span>587</span>
+
+            </div>
+
+            <div class="metric-row">
+
+                <span>TLS</span>
+
+                <span>Enabled</span>
+
+            </div>
+
+            <div class="metric-row">
+
+                <span>Status</span>
+
+                <span>Operational</span>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- AI -->
+
+        <div class="panel">
+
+            <div class="panel-title">
+
+                <i class="fa-solid fa-brain"></i>
+
+                Gemini AI
+
+            </div>
+
+            <div class="panel-status green">
+
+                ● Ready
+
+            </div>
+
+            <div class="metric-row">
+
+                <span>Provider</span>
+
+                <span>Gemini</span>
+
+            </div>
+
+            <div class="metric-row">
+
+                <span>API</span>
+
+                <span>Loaded</span>
+
+            </div>
+
+            <div class="metric-row">
+
+                <span>Health</span>
+
+                <span>100%</span>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- SERVICES -->
+
+        <div class="panel">
+
+            <div class="panel-title">
+
+                <i class="fa-solid fa-server"></i>
+
+                Services
+
+            </div>
+
+            <ul class="service-list">
+
+                <li>🟢 Dashboard</li>
+
+                <li>🟢 Campaign Engine</li>
+
+                <li>🟢 Risk Engine</li>
+
+                <li>🟢 Reports</li>
+
+                <li>🟢 Authentication</li>
+
+                <li>🟢 PostgreSQL</li>
+
+            </ul>
+
+        </div>
+
+
+
+        <!-- SYSTEM -->
+
+        <div class="panel">
+
+            <div class="panel-title">
+
+                <i class="fa-solid fa-desktop"></i>
+
+                System Information
+
+            </div>
+
+            <div class="metric-row">
+
+                <span>OS</span>
+
+                <span id="osName">--</span>
+
+            </div>
+
+            <div class="metric-row">
+
+                <span>Processor</span>
+
+                <span id="processorName">--</span>
+
+            </div>
+
+            <div class="metric-row">
+
+                <span>Uptime</span>
+
+                <span id="uptime">--</span>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    
+
+    <section class="charts-grid">
+
+        <div class="chart-panel">
+
+            <h2>
+
+                CPU Usage History
+
+            </h2>
+
+            <canvas id="cpuChart"></canvas>
+
+        </div>
+
+
+
+        <div class="chart-panel">
+
+            <h2>
+
+                Memory Usage History
+
+            </h2>
+
+            <canvas id="memoryChart"></canvas>
+
+        </div>
+
+
+
+        <div class="chart-panel">
+
+            <h2>
+
+                Disk Usage History
+
+            </h2>
+
+            <canvas id="diskChart"></canvas>
+
+        </div>
+
+    </section>
+
+
+
+    
+
+    <section class="bottom-grid">
+
+        <div class="wide-panel">
+
+            <div class="panel-title">
+
+                <i class="fa-solid fa-gauge-high"></i>
+
+                Performance Summary
+
+            </div>
+
+            <table class="perf-table">
+
+                <tr>
+
+                    <td>Database Response</td>
+
+                    <td id="dbPerf">
+
+                        <span id="db_latency_footer">--</span>
+
+                    </td>
+
+                </tr>
+
+                <tr>
+
+                    <td>CPU Utilization</td>
+
+                    <td id="cpuPerf">--</td>
+
+                </tr>
+
+                <tr>
+
+                    <td>Memory Utilization</td>
+
+                    <td id="memoryPerf">--</td>
+
+                </tr>
+
+                <tr>
+
+                    <td>Disk Utilization</td>
+
+                    <td id="diskPerf">--</td>
+
+                </tr>
+
+            </table>
+
+        </div>
+
+
+
+        <div class="wide-panel">
+
+            <div class="panel-title">
+
+                <i class="fa-solid fa-triangle-exclamation"></i>
+
+                Recent Events
+
+            </div>
+
+            <div class="event success">
+
+                ✔ Database Connection Healthy
+
+            </div>
+
+            <div class="event success">
+
+                ✔ System Monitoring Active
+
+            </div>
+
+            <div class="event success">
+
+                ✔ API Responding Normally
+
+            </div>
+
+            <div class="event success">
+
+                ✔ Auto Refresh Enabled
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+<script src="{{ url_for('static', filename='system_health.js') }}"></script>
+
+</body>
+
+</html>
