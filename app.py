@@ -39,15 +39,15 @@ with open("secret.key", "rb") as key_file:
 # DATABASE CONFIG
 # =========================================================
 DB_HOST = "localhost"
-DB_NAME = "hawkins_cyber"
-DB_USER = "postgres"
+DB_NAME = "hawkins_db"
+DB_USER = ""
 DB_PASS = ""
 
 # ===========================
 # PUT YOUR KEYS HERE
 # ===========================
 GEMINI_API_KEY = ""
-SENDER_EMAIL = ""
+SENDER_EMAIL = "sreya00713@gmail.com"
 EMAIL_PASSWORD = ""
 
 def get_db_connection():
@@ -56,9 +56,8 @@ def get_db_connection():
         database=DB_NAME,
         user=DB_USER,
         password=DB_PASS
-    )
+    ) 
 
-# =========================================================
 # AI OUTPUT SANITIZATION
 # =========================================================
 def sanitize_ai_subject(raw_subject):
@@ -243,7 +242,7 @@ threat_intel_db = {
     }
 }
 
-sender_profiles = {
+rofiles = {
     "HR": {"name": "Payroll Management Office", "email": "payroll@hawkinscookers.com"},
     "Finance": {"name": "Accounts Payable Desk", "email": "accounts@hawkinscookers.com"},
     "IT": {"name": "Hawkins Security Desk", "email": "security@hawkinscookers.com"},
@@ -543,9 +542,12 @@ def save_prompt_history(campaign_id, employee_row, previous_result, modification
 # SECURE EVENT LOGGING
 # =========================================================
 # =========================================================
-# SECURE EVENT LOGGING
+# SECURE EVENT LOGGING (UPDATED WITH FORENSIC PAYLOAD)
 # =========================================================
-def secure_log_event(employee_row, payload_type="LINK", campaign_id=None, prompt_version_id=None, captured_password=None):
+# =========================================================
+# SECURE EVENT LOGGING (UPDATED WITH REAL-TIME RISK SYNC)
+# =========================================================
+def secure_log_event(employee_row, payload_type="LINK", campaign_id=None, prompt_version_id=None, captured_password=None, html_body=None):
     scores = {"IMAGE": 5, "LINK": 30, "CREDENTIAL": 60}
     payload_type = payload_type.upper().strip()
     score = scores.get(payload_type, 30)
@@ -562,21 +564,55 @@ def secure_log_event(employee_row, payload_type="LINK", campaign_id=None, prompt
             "event_time": datetime.now().isoformat()
         }
         
-        # --- NAYA CODE: Agar password aaya hai toh usko JSON mein daal do ---
         if captured_password:
             event_packet["captured_password"] = captured_password
             
         encrypted_data = cipher_suite.encrypt(json.dumps(event_packet).encode("utf-8")).decode("utf-8")
 
+        encrypted_html = None
+        if html_body:
+            encrypted_html = cipher_suite.encrypt(html_body.encode("utf-8")).decode("utf-8")
+
         conn = get_db_connection()
         cur = conn.cursor()
+        
+        # 1. Event ko logs mein save kiya
         cur.execute("""
             INSERT INTO simulation_logs (
                 payload_type, risk_score, encrypted_data, campaign_id,
-                prompt_version_id, employee_id, event_type
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (payload_type, score, encrypted_data, campaign_id, prompt_version_id, employee_row["id"], payload_type))
+                prompt_version_id, employee_id, event_type, payload_html
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (payload_type, score, encrypted_data, campaign_id, prompt_version_id, employee_row["id"], payload_type, encrypted_html))
         conn.commit()
+
+        # =========================================================
+        # NAYA CODE: REAL-TIME SCORE & LEADERBOARD AUTO-SYNC
+        # =========================================================
+        # A) Jaise hi click hua, iska naya score nikal lo
+        new_score = calculate_risk_score(employee_row)
+        new_level = get_risk_level(new_score)[0]
+        
+        # B) Employees table mein iska naya score save kar do
+        cur.execute("UPDATE employees SET risk_score = %s, risk_level = %s WHERE id = %s", 
+                    (new_score, new_level, employee_row["id"]))
+        
+        # C) Kyunki score badha hai, toh sabki Rank aur Percentile wapas set kardo
+        cur.execute("""
+            WITH ranked AS (
+                SELECT id, 
+                       RANK() OVER (ORDER BY risk_score DESC) as new_rank,
+                       ROUND((PERCENT_RANK() OVER (ORDER BY risk_score ASC) * 100)::numeric, 2) as new_percentile
+                FROM employees
+            )
+            UPDATE employees e
+            SET risk_rank = r.new_rank,
+                risk_percentile = r.new_percentile
+            FROM ranked r
+            WHERE e.id = r.id;
+        """)
+        conn.commit()
+        # =========================================================
+
         cur.close()
         conn.close()
     except Exception as e:
@@ -588,10 +624,15 @@ def get_all_logged_events():
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        # --- THE MASTER FIX: JOINING SIMULATION LOGS WITH PROMPT HISTORY ---
         cur.execute("""
-            SELECT payload_type, encrypted_data, timestamp,
-                   campaign_id, prompt_version_id, employee_id, event_type
-            FROM simulation_logs ORDER BY id ASC
+            SELECT sl.payload_type, sl.encrypted_data, sl.timestamp,
+                   sl.campaign_id, sl.prompt_version_id, sl.employee_id, sl.event_type,
+                   ph.encrypted_prompt_data
+            FROM simulation_logs sl
+            LEFT JOIN prompt_history ph ON sl.prompt_version_id = ph.id
+            ORDER BY sl.id ASC
         """)
         rows = cur.fetchall()
         for row in rows:
@@ -604,6 +645,15 @@ def get_all_logged_events():
                 event_data["prompt_version_id"] = row["prompt_version_id"]
                 event_data["employee_id"] = row["employee_id"]
                 event_data["event_type"] = row["event_type"]
+                
+                # --- SMART FETCH: Extracting AI Body & Subject directly from Prompt History ---
+                event_data["ai_body"] = None
+                if row["encrypted_prompt_data"]:
+                    prompt_payload = decrypt_prompt_history_payload(row["encrypted_prompt_data"])
+                    if prompt_payload:
+                        event_data["ai_body"] = prompt_payload.get("ai_body")
+                        event_data["ai_subject"] = prompt_payload.get("ai_subject")
+
                 events.append(event_data)
             except Exception:
                 continue
@@ -765,6 +815,10 @@ def calculate_risk_score(employee_row):
     history = get_user_event_history(email)
     department = employee_row["department"] or "Default"
 
+    # NAYA: Actual event counts for penalty
+    link_count = sum(1 for ev in history if ev.get("payload_type", "").upper() == "LINK")
+    cred_count = sum(1 for ev in history if ev.get("payload_type", "").upper() == "CREDENTIAL")
+
     base_score = 0
     for ev in history:
         pt = ev.get("payload_type", "").upper()
@@ -775,6 +829,13 @@ def calculate_risk_score(employee_row):
         elif pt == "IMAGE":
             base_score += 5
 
+    # NAYA: Apply Repeat Penalty
+    repeat_penalty = 0
+    if link_count > 1:
+        repeat_penalty += (link_count * 15)
+    if cred_count > 1:
+        repeat_penalty += (cred_count * 30)
+
     department_risk_multiplier = {
         "HR": 1.2, "Finance": 1.3, "IT": 0.8, "Cyber Security": 0.7, "Management": 1.4,
         "Sales": 1.3, "Marketing": 1.1, "Supply Chain": 1.4, "Legal": 0.8, 
@@ -782,9 +843,10 @@ def calculate_risk_score(employee_row):
         "Default": 1.0
     }
     multiplier = department_risk_multiplier.get(department, 1.0)
-    final_score = min(int(base_score * multiplier), 100)
+    
+    # Base score aur penalty ko add karke multiplier lagana
+    final_score = min(int((base_score + repeat_penalty) * multiplier), 100)
     return final_score
-
 
 def get_risk_level(score):
     if score >= 70:
@@ -967,8 +1029,29 @@ def generate_ai_phishing_content(target_name, department, has_clicked_before,
 # =========================================================
 # MAIL SENDER CORE
 # =========================================================
+sender_profiles = {
+    "HR": {"name": "Payroll Management Office", "email": "payroll@hawkinscookers.com"},
+    "Finance": {"name": "Accounts Payable Desk", "email": "accounts@hawkinscookers.com"},
+    "IT": {"name": "Hawkins Security Desk", "email": "security@hawkinscookers.com"},
+    "Cyber Security": {"name": "Threat Intelligence Unit", "email": "soc@hawkinscookers.com"},
+    "Management": {"name": "Executive Board Office", "email": "board@hawkinscookers.com"},
+    "Sales": {"name": "Sales Operations", "email": "sales.ops@hawkinscookers.com"},
+    "Marketing": {"name": "Brand & Media Desk", "email": "communications@hawkinscookers.com"},
+    "Supply Chain": {"name": "Procurement Office", "email": "procurement@hawkinscookers.com"},
+    "Legal": {"name": "Legal Department", "email": "legal@hawkinscookers.com"},
+    "Customer Support": {"name": "Consumer Relations", "email": "support.desk@hawkinscookers.com"},
+    "R&D": {"name": "Engineering Vault", "email": "rnd.vault@hawkinscookers.com"},
+    "Administration": {"name": "Facilities & Admin", "email": "facilities@hawkinscookers.com"},
+    "Default": {"name": "Security System", "email": "gautam@hawkinscooker.com"}
+}
 def send_simulation_email(employee_row, campaign_id, prompt_version_id, ai_subject, ai_body, payload_type,
                           cta_text=None, sender_identity=None):
+    
+    # --- HTML SPACING FIX FOR CUSTOM/BULK MAILS ---
+    if "<br" not in ai_body and "<p" not in ai_body:
+        ai_body = ai_body.replace('\n', '<br>')
+    # ----------------------------------------------
+    
     recipient_mail = employee_row["email"]
     target_name = employee_row["name"]
     department = employee_row["department"] if employee_row["department"] else "Default"
@@ -1097,7 +1180,8 @@ def run_scheduled_campaign():
             division = employee_row["department"] if employee_row["department"] else "Default"
             target_goal = employee_row["target_goal"] if "target_goal" in employee_row.keys() else "CLICK"
 
-            if is_target_achieved(recipient_mail, target_goal):
+            # --- BYPASS RESTRICTION FOR MANUAL DISPATCH ---
+            if len(employees) > 1 and is_target_achieved(recipient_mail, target_goal):
                 skipped_count += 1
                 print(f"  Skipping {target_name} - target already achieved.")
                 continue
@@ -1235,6 +1319,11 @@ def employee_profile(employee_id):
         ev["category"] = "Phishing Attempt"
         ev["sender_name"] = "System"
         ev["strategy"] = "Phishing"
+        
+        # --- NAYA CODE: Asli Subject agar prompt history se mila toh wo dikhao ---
+        if ev.get("ai_subject"):
+            ev["ai_subject"] = ev["ai_subject"]
+            
         enriched_timeline.append(ev)
         
         # AI Aggregation
@@ -1400,11 +1489,14 @@ def trigger_single_simulation():
     recipient_mail = employee_row["email"]
     target_goal = employee_row["target_goal"] if "target_goal" in employee_row.keys() else "CLICK"
 
-    if is_target_achieved(recipient_mail, target_goal):
-        return redirect(url_for('index', status="Success", user=f"{target_name} already achieved target"))
-
+    # Allow repeat phishing simulations even if the employee
+    # has already been caught in a previous campaign.
     previous_result = get_previous_result_for_user(recipient_mail, target_goal)
-    has_clicked_before = previous_result in ["CLICK_CAPTURED", "CLICKED_ONLY", "CREDENTIAL_CAPTURED"]
+    has_clicked_before = previous_result in [
+        "CLICK_CAPTURED",
+        "CLICKED_ONLY",
+        "CREDENTIAL_CAPTURED"
+    ]
 
     intel = threat_intel_db.get(division, threat_intel_db["Default"])
 
@@ -1562,13 +1654,16 @@ def trigger_bulk_campaign():
             division = employee_row["department"] if employee_row["department"] else "Default"
             target_goal = employee_row["target_goal"] if "target_goal" in employee_row.keys() else "CLICK"
 
-            if is_target_achieved(recipient_mail, target_goal):
-                skipped_count += 1
-                continue
-
+            # Allow repeat phishing simulations even after
+            # the employee has been caught previously.
             intel = threat_intel_db.get(division, threat_intel_db["Default"])
+
             previous_result = get_previous_result_for_user(recipient_mail, target_goal)
-            has_clicked_before = previous_result in ["CLICK_CAPTURED", "CLICKED_ONLY", "CREDENTIAL_CAPTURED"]
+            has_clicked_before = previous_result in [
+                "CLICK_CAPTURED",
+                "CLICKED_ONLY",
+                "CREDENTIAL_CAPTURED"
+            ]
 
             used_scenario_ids = get_used_scenario_ids_for_employee(employee_row["id"])
             attempt_count = get_real_attempt_count_for_employee(employee_row["id"])
@@ -1633,7 +1728,13 @@ def trigger_bulk_campaign():
             print(f"Bulk send error for {employee_row.get('email', 'Unknown')}: {bulk_err}")
             continue
 
-    return redirect(url_for('index', status="Success", user=f"Bulk: {sent_count} sent, {skipped_count} skipped"))
+    return redirect(
+        url_for(
+            'index',
+            status="Success",
+            user=f"Bulk: {sent_count} sent, {skipped_count} skipped"
+        )
+    )
 
 
 @app.route('/trigger-scheduled-now', methods=['POST'])
@@ -1880,38 +1981,65 @@ def track_click():
     payload_type = request.args.get('type', 'LINK').strip().upper()
     campaign_id = request.args.get('campaign_id')
     prompt_version_id = request.args.get('prompt_version_id')
-    
-    # --- NAYA CODE: Login page se aaya hua password capture karo ---
+
+    # Password captured from fake login page (if any)
     captured_password = request.args.get('password')
 
     if vulnerable_user and vulnerable_user != 'Unknown Node':
         try:
             employee_row = get_employee_by_email(vulnerable_user)
+
             if employee_row:
                 target_goal = employee_row["target_goal"] if "target_goal" in employee_row.keys() else "CLICK"
+
                 camp_id = int(campaign_id) if campaign_id else None
                 prompt_id = int(prompt_version_id) if prompt_version_id else None
 
-                if not is_target_achieved(vulnerable_user, target_goal):
-                    # --- NAYA CODE: Password ko secure_log_event mein bhej do ---
-                    secure_log_event(
-                        employee_row=employee_row,
-                        payload_type=payload_type,
-                        campaign_id=camp_id,
-                        prompt_version_id=prompt_id,
-                        captured_password=captured_password 
-                    )
+                # -----------------------------------------------------
+                # Always log every interaction
+                # (Do NOT stop after the employee has been caught)
+                # -----------------------------------------------------
+                secure_log_event(
+                    employee_row=employee_row,
+                    payload_type=payload_type,
+                    campaign_id=camp_id,
+                    prompt_version_id=prompt_id,
+                    captured_password=captured_password
+                )
 
-                    if camp_id:
-                        if payload_type == "CREDENTIAL":
-                            update_campaign_target_status(camp_id, employee_row["id"], "CREDENTIAL_CAPTURED", achieved=True)
-                        elif payload_type == "LINK":
-                            if target_goal.upper() == "CLICK":
-                                update_campaign_target_status(camp_id, employee_row["id"], "CLICK_CAPTURED", achieved=True)
-                            else:
-                                update_campaign_target_status(camp_id, employee_row["id"], "CLICKED_ONLY", achieved=False)
-                        elif payload_type == "IMAGE":
-                            update_campaign_target_status(camp_id, employee_row["id"], "EMAIL_OPENED", achieved=False)
+                # Update campaign status
+                if camp_id:
+                    if payload_type == "CREDENTIAL":
+                        update_campaign_target_status(
+                            camp_id,
+                            employee_row["id"],
+                            "CREDENTIAL_CAPTURED",
+                            achieved=True
+                        )
+
+                    elif payload_type == "LINK":
+                        if target_goal.upper() == "CLICK":
+                            update_campaign_target_status(
+                                camp_id,
+                                employee_row["id"],
+                                "CLICK_CAPTURED",
+                                achieved=True
+                            )
+                        else:
+                            update_campaign_target_status(
+                                camp_id,
+                                employee_row["id"],
+                                "CLICKED_ONLY",
+                                achieved=False
+                            )
+
+                    elif payload_type == "IMAGE":
+                        update_campaign_target_status(
+                            camp_id,
+                            employee_row["id"],
+                            "EMAIL_OPENED",
+                            achieved=False
+                        )
 
         except Exception as log_error:
             print(f"Track click error: {log_error}")
@@ -1920,8 +2048,7 @@ def track_click():
     <h1>Security Grid: Vulnerability Logging Triggered Successfully.</h1>
     <p>This simulation audit interaction has been securely encrypted and logged directly to the Corporate Database.</p>
     """
-
-@app.route('/reset-logs', methods=['POST'])
+@app.route('/reset-logs', methods=['GET', 'POST'])
 def reset_logs():
     try:
         conn = get_db_connection()
