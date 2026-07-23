@@ -36,11 +36,12 @@ def calculate_final_risk(event_counts, role, dept, training_reward=0, report_rew
     """
     base = calculate_base_event_score(event_counts)
     
-    # Repeat behavior penalty (e.g., repeating credential submissions)
-    penalty = calculate_exponential_penalty(base, event_counts.get("CREDENTIAL", 0), "CREDENTIAL")
+    # FIX: Apply repeat penalty for BOTH Credentials and Links
+    cred_penalty = calculate_exponential_penalty(base, event_counts.get("CREDENTIAL", 0), "CREDENTIAL")
+    link_penalty = calculate_exponential_penalty(base, event_counts.get("LINK", 0), "LINK")
     
     # Aggregation
-    risk = base + penalty
+    risk = base + cred_penalty + link_penalty
     
     # Weighting (Formulas 3 & 4)
     risk *= ROLE_WEIGHTS.get(role, 1.0)
