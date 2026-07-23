@@ -43,15 +43,17 @@ def generate_enterprise_risk_scores():
     conn.close()
     print("Risk Engine successfully synchronized PostgreSQL.")
 
-def build_risk_breakdown(employee_row, specific_history=None): # <--- Yahan specific_history add kiya
+def build_risk_breakdown(employee_row, specific_history=None): 
     """
-    Detailed breakdown of risk math, reusing existing logic 
-    to maintain a single source of truth.
+    Detailed breakdown of risk math.
     """
     email = employee_row["email"].strip().lower()
-    # Agar specific_history pass kiya hai toh usey use karo, nahi toh purana history fetch karo
     history = specific_history if specific_history is not None else get_user_event_history(email)
     department = employee_row["department"] or "Default"
+
+    # Count actual events to calculate penalties properly
+    link_count = sum(1 for ev in history if ev.get("payload_type", "").upper() == "LINK")
+    cred_count = sum(1 for ev in history if ev.get("payload_type", "").upper() == "CREDENTIAL")
 
     # 1. Base Score
     base_score = 0
@@ -68,7 +70,14 @@ def build_risk_breakdown(employee_row, specific_history=None): # <--- Yahan spec
     }
     dept_weight = dept_weights.get(department, 1.0)
     
-    repeat_penalty = 0 
+    # FIX: Calculate actual repeat penalty instead of hardcoding 0
+    # Using a simplified multiplier for the breakdown view
+    repeat_penalty = 0
+    if link_count > 1:
+        repeat_penalty += (link_count * 15) # Add 15 extra points per repeated link click
+    if cred_count > 1:
+        repeat_penalty += (cred_count * 30) # Add 30 extra points per repeated credential submission
+
     training_reward = 0
 
     # 3. Calculation
